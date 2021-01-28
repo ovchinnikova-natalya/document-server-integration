@@ -17,27 +17,26 @@
  */
 
 function initEditor(docKey, mode, type) {
-    //mode for editor
+    //editor mode
     window.mode = window.mode || mode || "view";
     mode = window.mode;
 
-    //mode for editor
+    //editor type
     window.type = window.type || type || "desktop";
     type = window.type;
 
-    //url for document
+    //document url
     window.docUrl = document.getElementById("documentUrl").value;
 
-    //key for chaching and collaborate editing
+    //key for caching and collaborate editing
     window.docKey = window.docKey || docKey || key(docUrl);
     docKey = window.docKey;
 
-    //type for document
+    //document type
     var docType = docUrl.substring(docUrl.lastIndexOf(".") + 1).trim().toLowerCase();
-    //type for editor
     var documentType = getDocumentType(docType);
 
-    //creating object editing
+    //creating object for editing
     new DocsAPI.DocEditor("placeholder",
         {
             type: type,
@@ -59,11 +58,13 @@ function initEditor(docKey, mode, type) {
         });
 }
 
+//get document key from its url
 function key(k) {
     var result = k.replace(new RegExp("[^0-9-.a-zA-Z_=]", "g"), "_") + (new Date()).getTime();
     return result.substring(result.length - Math.min(result.length, 20));
 };
 
+//get document type from the extension
 var getDocumentType = function (ext) {
     if (".doc.docx.docm.dot.dotx.dotm.odt.fodt.ott.rtf.txt.html.htm.mht.pdf.djvu.fb2.epub.xps".indexOf(ext) != -1) return "text";
     if (".xls.xlsx.xlsm.xlt.xltx.xltm.ods.fods.ots.csv".indexOf(ext) != -1) return "spreadsheet";

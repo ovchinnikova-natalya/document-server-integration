@@ -32,18 +32,21 @@ docManager.dir = null;
 docManager.req = null;
 docManager.res = null;
 
+/** check if a path exists or not */
 docManager.existsSync = function(path) {
     let res = true;
     try {
-        fileSystem.accessSync(path, fileSystem.F_OK);
-    } catch (e) {
+        fileSystem.accessSync(path, fileSystem.F_OK);  /** synchronously test a user's permissions for the directory specified by path; the directory is visible to the calling process */
+    } catch (e) {  /** the response is set to false, if an error occurs */
         res = false;
     }
     return res;
 };
+
+/** create a new directory if it doesn't exist */
 docManager.createDirectory = function(path) {
     if (!this.existsSync(path)) {
-        fileSystem.mkdirSync(path);
+        fileSystem.mkdirSync(path);  
     }
 };
 
@@ -53,190 +56,211 @@ docManager.init = function (dir, req, res) {
     docManager.res = res;
 };
 
+/** get the language from the request */
 docManager.getLang = function () {
     if (docManager.req.query.lang) {
         return docManager.req.query.lang;
-    } else {
+    } else {  /** the default language value is English */
         return "en"
     }
 };
 
+/** get custom parameters */
 docManager.getCustomParams = function () {
     let params = "";
 
-    const userid = docManager.req.query.userid;
+    const userid = docManager.req.query.userid;  /** user id */
     params += (userid ? "&userid=" + userid : "");
 
-    const name = docManager.req.query.name;
+    const name = docManager.req.query.name;  /** user name */
     params += (name ? "&name=" + name : "");
 
-    const lang = docManager.req.query.lang;
+    const lang = docManager.req.query.lang;  /** language */
     params += (lang ? "&lang=" + docManager.getLang() : "");
 
-    const fileName = docManager.req.query.fileName;
+    const fileName = docManager.req.query.fileName;  /** file name */
     params += (fileName ? "&fileName=" + fileName : "");
 
-    const mode = docManager.req.query.mode;
+    const mode = docManager.req.query.mode;  /** mode: view/edit/review/comment/fillForms/embedded */
     params += (mode ? "&mode=" + mode : "");
 
-    const type = docManager.req.query.type;
+    const type = docManager.req.query.type;  /** type: embedded/mobile/desktop */
     params += (type ? "&type=" + type : "");
 
     return params;
 };
 
+/** get the correct file name if such a name already exists */
 docManager.getCorrectName = function (fileName, userAddress) {
-    const baseName = fileUtility.getFileName(fileName, true);
-    const ext = fileUtility.getFileExtension(fileName);
-    let name = baseName + ext;
+    const baseName = fileUtility.getFileName(fileName, true);  /** get file name from the url without extension */
+    const ext = fileUtility.getFileExtension(fileName);  /** get file extension from the url */
+    let name = baseName + ext;  /** get full file name */
     let index = 1;
 
-    while (this.existsSync(docManager.storagePath(name, userAddress))) {
-        name = baseName + " (" + index + ")" + ext;
+    while (this.existsSync(docManager.storagePath(name, userAddress))) {  /** if a file with such a name already exists in this directory */
+        name = baseName + " (" + index + ")" + ext;  /** then add an index after its base name */
         index++;
     }
 
     return name;
 };
 
+/** create demo document */
 docManager.createDemo = function (demoName, userid, username) {
-    const fileName = docManager.getCorrectName(demoName);
+    const fileName = docManager.getCorrectName(demoName);  /** get the correct file name if such a name already exists */
 
-    docManager.copyFile(path.join(__dirname, "..","public", "samples", demoName), docManager.storagePath(fileName));
+    docManager.copyFile(path.join(__dirname, "..","public", "samples", demoName), docManager.storagePath(fileName));  /** copy sample document of a necessary extension to the storage path */
 
-    docManager.saveFileData(fileName, userid, username);
+    docManager.saveFileData(fileName, userid, username);  /** save file data to the file */
 
     return fileName;
 };
 
+/** save file data to the file */
 docManager.saveFileData = function (fileName, userid, username) {
-    const userAddress = docManager.curUserHostAddress();
+    const userAddress = docManager.curUserHostAddress();  /** get current user host address */
+    /** get the full creation date of the document */
     const date_create = fileSystem.statSync(docManager.storagePath(fileName)).mtime;
-    const minutes = (date_create.getMinutes() < 10 ? '0' : '') + date_create.getMinutes().toString();
-    const month = (date_create.getMonth() < 10 ? '0' : '') + (parseInt(date_create.getMonth().toString()) + 1);
-    const sec = (date_create.getSeconds() < 10 ? '0' : '') + date_create.getSeconds().toString();
-    const date_format = date_create.getFullYear() + "-" + month + "-" + date_create.getDate() + " " + date_create.getHours() + ":" + minutes + ":" + sec;
+    const minutes = (date_create.getMinutes() < 10 ? '0' : '') + date_create.getMinutes().toString();  
+    const month = (date_create.getMonth() < 10 ? '0' : '') + (parseInt(date_create.getMonth().toString()) + 1); 
+    const sec = (date_create.getSeconds() < 10 ? '0' : '') + date_create.getSeconds().toString();  
+    const date_format = date_create.getFullYear() + "-" + month + "-" + date_create.getDate() + " " + date_create.getHours() + ":" + minutes + ":" + sec;  
 
-    const file_info = docManager.historyPath(fileName, userAddress, true);
-    this.createDirectory(file_info);
+    const file_info = docManager.historyPath(fileName, userAddress, true);  /** get file history information */
+    this.createDirectory(file_info);  /** create a new history directory if it doesn't exist */
 
-    fileSystem.writeFileSync(path.join(file_info, fileName + ".txt"), date_format + "," + userid + "," + username);
+    fileSystem.writeFileSync(path.join(file_info, fileName + ".txt"), date_format + "," + userid + "," + username);  /** write all the file information to a new txt file */
 };
 
+/** get file data */
 docManager.getFileData = function (fileName, userAddress) {
-    const history = path.join(docManager.historyPath(fileName, userAddress, true), fileName + ".txt");
-    if (!this.existsSync(history)) {
-        return ["2017-01-01", "uid-1", "John Smith"];
+    const history = path.join(docManager.historyPath(fileName, userAddress, true), fileName + ".txt");  /** get path to the file with a given file information */
+    if (!this.existsSync(history)) {  /** if such a file doesn't exist */
+        return ["2017-01-01", "uid-1", "John Smith"];  /** then return default information */
     }
 
-    return ((fileSystem.readFileSync(history)).toString()).split(",");
+    return ((fileSystem.readFileSync(history)).toString()).split(",");  /** otherwise, return file data in the string format */
 };
 
+/** get url to the original file */
 docManager.getFileUri = function (fileName) {
     return docManager.getlocalFileUri(fileName, 0, true);
 };
 
+/** get local file url */
 docManager.getlocalFileUri = function (fileName, version, forDocumentServer) {
     const serverPath = docManager.getServerUrl(forDocumentServer);
     const hostAddress = docManager.curUserHostAddress();
-    const url = serverPath + configServer.get("storagePath") + "/" + hostAddress + "/" + encodeURIComponent(fileName);
+    const url = serverPath + configServer.get("storagePath") + "/" + hostAddress + "/" + encodeURIComponent(fileName);  /** get full url address to the file */
     if (!version) {
-        return url;
+        return url; 
     }
-    return url + "-history/" + version;
+    return url + "-history/" + version;  /** return history path to the specified file version */
 };
 
+/** get server url */
 docManager.getServerUrl = function (forDocumentServer) {
-    return (forDocumentServer && !!configServer.get("exampleUrl")) ? configServer.get("exampleUrl") : (docManager.getProtocol() + "://" + docManager.req.get("host"));
+    return (forDocumentServer && !!configServer.get("exampleUrl")) ? configServer.get("exampleUrl") : (docManager.getProtocol() + "://" + docManager.req.get("host"));  
 };
 
+/** get callback url */
 docManager.getCallback = function (fileName) {
     const server = docManager.getServerUrl(true);
-    const hostAddress = docManager.curUserHostAddress();
-    const handler = "/track?filename=" + encodeURIComponent(fileName) + "&useraddress=" + encodeURIComponent(hostAddress);
+    const hostAddress = docManager.curUserHostAddress();  
+    const handler = "/track?filename=" + encodeURIComponent(fileName) + "&useraddress=" + encodeURIComponent(hostAddress);  /** get callback handler */
 
-    return server + handler;
+    return server + handler;  /** get the result callback url */
 };
 
+/** get storage path of the given file */
 docManager.storagePath = function (fileName, userAddress) {
-    fileName = fileUtility.getFileName(fileName);
-    const directory = path.join(docManager.dir, docManager.curUserHostAddress(userAddress));
-    this.createDirectory(directory);
-    return path.join(directory, fileName);
+    fileName = fileUtility.getFileName(fileName);  /** get a file name with extension */
+    const directory = path.join(docManager.dir, docManager.curUserHostAddress(userAddress));  /** get a path to the directory for the host address */
+    this.createDirectory(directory);  /** create a new directory if it doesn't exist */
+    return path.join(directory, fileName);  /** put the given file to this directory */
 };
 
+/** get the path to the forcesaved file version */
 docManager.forcesavePath = function (fileName, userAddress, create) {
     let directory = path.join(docManager.dir, docManager.curUserHostAddress(userAddress));
-    if (!this.existsSync(directory)) {
+    if (!this.existsSync(directory)) {  /** return empty string, if the directory with host address doesn't exist */
         return "";
     }
-    directory = path.join(directory, fileName + "-history");
-    if (!create && !this.existsSync(directory)) {
+    directory = path.join(directory, fileName + "-history");  /** get the path to the history of the given file */
+    if (!create && !this.existsSync(directory)) {  /** return empty string, if the history directory doesn't exist and we are not supposed to create it */
         return "";
     }
-    this.createDirectory(directory);
-    directory = path.join(directory, fileName);
+    this.createDirectory(directory);  /** create history directory if it doesn't exist */
+    directory = path.join(directory, fileName);  /** and get the path to the given file */
     if (!create && !this.existsSync(directory)) {
         return "";
     }
     return directory;
 };
 
+/** create the path to the file history */
 docManager.historyPath = function (fileName, userAddress, create) {
     let directory = path.join(docManager.dir, docManager.curUserHostAddress(userAddress));
     if (!this.existsSync(directory)) {
         return "";
     }
-    directory = path.join(directory, fileName + "-history");
+    directory = path.join(directory, fileName + "-history");  /** get the path to the history of the given file */
     if (!create && !this.existsSync(path.join(directory, "1"))) {
         return "";
     }
     return directory;
 };
 
+/** get the path to the specified file version */
 docManager.versionPath = function (fileName, userAddress, version) {
-    const historyPath = docManager.historyPath(fileName, userAddress, true);
-    return path.join(historyPath, "" + version);
+    const historyPath = docManager.historyPath(fileName, userAddress, true);  /** get the path to the history of a given file or create it if it doesn't exist */
+    return path.join(historyPath, "" + version);  
 };
 
+/** get the path to the previous file version */
 docManager.prevFilePath = function (fileName, userAddress, version) {
     return path.join(docManager.versionPath(fileName, userAddress, version), "prev" + fileUtility.getFileExtension(fileName));
 };
 
+/** get the path to the file with document versions differences */
 docManager.diffPath = function (fileName, userAddress, version) {
     return path.join(docManager.versionPath(fileName, userAddress, version), "diff.zip");
 };
 
+/** get the path to the file with document changes */
 docManager.changesPath = function (fileName, userAddress, version) {
     return path.join(docManager.versionPath(fileName, userAddress, version), "changes.txt");
 };
 
+/** get the path to the file with key value in it */
 docManager.keyPath = function (fileName, userAddress, version) {
     return path.join(docManager.versionPath(fileName, userAddress, version), "key.txt");
 };
 
+/** get the path to the file with the user information */
 docManager.changesUser = function (fileName, userAddress, version) {
     return path.join(docManager.versionPath(fileName, userAddress, version), "user.txt");
 };
 
+/** get all the stored files from the folder */
 docManager.getStoredFiles = function () {
     const userAddress = docManager.curUserHostAddress();
     const directory = path.join(docManager.dir, userAddress);
     this.createDirectory(directory);
     const result = [];
-    const storedFiles = fileSystem.readdirSync(directory);
-    for (let i = 0; i < storedFiles.length; i++) {
-        const stats = fileSystem.lstatSync(path.join(directory, storedFiles[i]));
+    const storedFiles = fileSystem.readdirSync(directory);  /** read the user host directory contents */
+    for (let i = 0; i < storedFiles.length; i++) {  /** run through all the elements from the folder */
+        const stats = fileSystem.lstatSync(path.join(directory, storedFiles[i]));  /** save element parameters */
 
-        if (!stats.isDirectory()) {
-            let historyPath = docManager.historyPath(storedFiles[i], userAddress);
+        if (!stats.isDirectory()) { /** if an element isn't a directory */
+            let historyPath = docManager.historyPath(storedFiles[i], userAddress);  /** get the path to the file history */
             let version = 1;
-            if (historyPath != "") {
-                version = docManager.countVersion(historyPath);
+            if (historyPath != "") {  /** if the history path exists */
+                version = docManager.countVersion(historyPath);  /** then get a file version */
             }
 
-            const time = stats.mtime.getTime();
-            const item = {
+            const time = stats.mtime.getTime();  /** get the time of element modification */
+            const item = {  /** create an object with element  data */
                 time: time,
                 name: storedFiles[i],
                 documentType: fileUtility.getFileType(storedFiles[i]),
@@ -244,95 +268,104 @@ docManager.getStoredFiles = function () {
                 version: version
             };
 
-            if (!result.length) {
-                result.push(item);
+            if (!result.length) {  /** if the result array is empty */
+                result.push(item);  /** push the item object to it */
             } else {
                 let j = 0;
-                for (; j < result.length; j++) {
-                    if (time > result[j].time) {
+                for (; j < result.length; j++) {  
+                    if (time > result[j].time) {  /** otherwise, run through all the objects from the result array */
                         break;
                     }
                 }
-                result.splice(j, 0, item);
+                result.splice(j, 0, item);  /** and add new object in ascending order of time */
             }
         }
     }
     return result;
 };
 
+/** get protocol from the request */
 docManager.getProtocol = function () {
     return docManager.req.headers["x-forwarded-proto"] || docManager.req.protocol;
 };
 
+/** get current user host address */
 docManager.curUserHostAddress = function (userAddress) {
-    if (!userAddress)
-        userAddress = docManager.req.headers["x-forwarded-for"] || docManager.req.connection.remoteAddress;
+    if (!userAddress)  /** if user address isn't passed to the function */
+        userAddress = docManager.req.headers["x-forwarded-for"] || docManager.req.connection.remoteAddress;  /** then take it from the header or use the remote address */
 
     return userAddress.replace(new RegExp("[^0-9a-zA-Z.=]", "g"), "_");
 };
 
+/** copy file */
 docManager.copyFile = function (exist, target) {
-    fileSystem.writeFileSync(target, fileSystem.readFileSync(exist));
+    fileSystem.writeFileSync(target, fileSystem.readFileSync(exist));  /** read existing file and write its content to a new one */
 };
 
+/** get an internal file extension */
 docManager.getInternalExtension = function (fileType) {
-    if (fileType == fileUtility.fileType.text)
+    if (fileType == fileUtility.fileType.text)  /** .docx for text documents */
         return ".docx";
 
-    if (fileType == fileUtility.fileType.spreadsheet)
+    if (fileType == fileUtility.fileType.spreadsheet)  /** .xlsx for text spreadsheets */
         return ".xlsx";
 
-    if (fileType == fileUtility.fileType.presentation)
+    if (fileType == fileUtility.fileType.presentation)  /** .pptx for presentations */
         return ".pptx";
 
-    return ".docx";
+    return ".docx";  /** the default value is .docx */
 };
 
+/** get document key */
 docManager.getKey = function (fileName) {
     const userAddress = docManager.curUserHostAddress();
-    let key = userAddress + docManager.getlocalFileUri(fileName);
+    let key = userAddress + docManager.getlocalFileUri(fileName);  /** get document key by adding local file url to the current user host address */
 
-    let historyPath = docManager.historyPath(fileName, userAddress);
-    if (historyPath != ""){
-        key += docManager.countVersion(historyPath);
+    let historyPath = docManager.historyPath(fileName, userAddress);  /** get the path to the file history */
+    if (historyPath != ""){  /** if a path to the file history exists */
+        key += docManager.countVersion(historyPath);  /** add file version number to the document key */
     }
 
-    let storagePath = docManager.storagePath(fileName, userAddress);
-    const stat = fileSystem.statSync(storagePath);
-    key += stat.mtime.getTime();
+    let storagePath = docManager.storagePath(fileName, userAddress);  /** get the storage path to the given file */
+    const stat = fileSystem.statSync(storagePath);  /** get file information */
+    key += stat.mtime.getTime();  /** and add creation time to the document key */
 
-    return documentService.generateRevisionId(key);
+    return documentService.generateRevisionId(key);  /** generate the document key value */
 };
 
+/** get current date */
 docManager.getDate = function (date) {
     const minutes = (date.getMinutes() < 10 ? '0' : '') + date.getMinutes().toString();
     return date.getMonth() + "/" + date.getDate() + "/" + date.getFullYear() + " " + date.getHours() + ":" + minutes;
 };
 
+/** get changes made in the file */
 docManager.getChanges = function (fileName) {
-    if (this.existsSync(fileName)) {
-        return JSON.parse(fileSystem.readFileSync(fileName));
+    if (this.existsSync(fileName)) {  /** if a directory with such a file exists */
+        return JSON.parse(fileSystem.readFileSync(fileName));  /** read this file and parse it */
     }
     return null;
 };
 
+/** get a file version */
 docManager.countVersion = function(directory) {
     let i = 0;
-    while (this.existsSync(path.join(directory, '' + (i + 1)))) {
-        i++;
+    while (this.existsSync(path.join(directory, '' + (i + 1)))) {  /** check if the file with such a version number exists */
+        i++;  /** if so, increase a version value by 1 */
     }
     return i;
 };
 
+/** get file history information */
 docManager.getHistory = function (fileName, content, keyVersion, version) {
     let oldVersion = false;
     let contentJson = null;
-    if (content) {
-        if (content.changes) {
-            contentJson = content.changes[0];
-        } else {
-            contentJson = content[0];
-            oldVersion = true;
+    if (content) {  /** if content is defined */
+        if (content.changes) {  /** and there are some modifications in the content */
+            contentJson = content.changes[0];  /** write these modifications to the json content */
+        } else {  
+            contentJson = content[0];  /** otherwise, write original content to the json content */
+            oldVersion = true;  /** and note that this is an old version */
         }
     }
 
@@ -341,7 +374,7 @@ docManager.getHistory = function (fileName, content, keyVersion, version) {
     const userid = content ? (oldVersion ? contentJson.userid : contentJson.user.id) : (docManager.getFileData(fileName, userAddress))[1];
     const created = content ? (oldVersion ? contentJson.date : contentJson.created) : (docManager.getFileData(fileName, userAddress))[0];
     const res = (content && !oldVersion) ? content : {changes: content};
-    res.key = keyVersion;
+    res.key = keyVersion;  /** write the information about the user, creation time, key and version to the result object */
     res.version = version;
     res.created = created;
     res.user = {
@@ -352,33 +385,35 @@ docManager.getHistory = function (fileName, content, keyVersion, version) {
     return res;
 };
 
+/** clean folder */
 docManager.cleanFolderRecursive = function (folder, me) {
-    if (fileSystem.existsSync(folder)) {
+    if (fileSystem.existsSync(folder)) {  /** if a given folder exists */
         const files = fileSystem.readdirSync(folder);
-        files.forEach((file) => {
-            const curPath = path.join(folder, file);
+        files.forEach((file) => {  /** for each file from the folder */
+            const curPath = path.join(folder, file);  /** get its current path */
             if (fileSystem.lstatSync(curPath).isDirectory()) {
-                this.cleanFolderRecursive(curPath, true);
+                this.cleanFolderRecursive(curPath, true);  /** for each folder repeat the same procedure */
             } else {
-                fileSystem.unlinkSync(curPath);
+                fileSystem.unlinkSync(curPath);  /** remove a file */
             }
         });
-        if (me) {
-            fileSystem.rmdirSync(folder);
+        if (me) {  /** if me value is set to true */
+            fileSystem.rmdirSync(folder);  /** remove this folder */
         }
     }
 };
 
+/** get files information */
 docManager.getFilesInfo = function (fileId) {
     const userAddress = docManager.curUserHostAddress();
     const directory = path.join(docManager.dir, userAddress);
-    const filesInDirectory = this.getStoredFiles();
+    const filesInDirectory = this.getStoredFiles();  /** get all the stored files from the folder */
     let responseArray = [];
     let responseObject;
-    for (let currentFile = 0; currentFile < filesInDirectory.length; currentFile++) {
+    for (let currentFile = 0; currentFile < filesInDirectory.length; currentFile++) {  /** run through all the files from the directory */
         const file = filesInDirectory[currentFile];
-        const stats = fileSystem.lstatSync(path.join(directory, file.name));
-        const fileObject = {
+        const stats = fileSystem.lstatSync(path.join(directory, file.name));  /** get file information */
+        const fileObject = {  /** write file parameters to a file object */
             version: file.version,
             id: this.getKey(file.name),
             contentLength: `${(stats.size/1024).toFixed(2)} KB`,
@@ -386,13 +421,13 @@ docManager.getFilesInfo = function (fileId) {
             title: file.name,
             updated: stats.mtime
         };
-        if (fileId !== undefined) {
-            if (this.getKey(file.name) == fileId) {
-                responseObject = fileObject; 
+        if (fileId !== undefined) {  /** if file id is defined */
+            if (this.getKey(file.name) == fileId) {  /** it will be equal to the document key value */
+                responseObject = fileObject;  /** and response object will be equal to the file object */
                 break;
             }
         }
-        else responseArray.push(fileObject);
+        else responseArray.push(fileObject);  /** otherwise, push file object to the response array */
     };
     if (fileId !== undefined) {
         if (responseObject !== undefined) return responseObject;
@@ -401,4 +436,5 @@ docManager.getFilesInfo = function (fileId) {
     else return responseArray;
 };
 
+/** save all the functions to the docManager module to export it later in other files */
 module.exports = docManager;

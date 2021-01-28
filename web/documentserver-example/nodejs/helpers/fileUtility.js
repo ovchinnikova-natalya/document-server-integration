@@ -22,19 +22,21 @@ var tempStorageUrl = siteUrl + configServer.get('tempStorageUrl');
 
 var fileUtility = {};
 
+/** get file name from the given url */
 fileUtility.getFileName = function (url, withoutExtension) {
     if (!url) return "";
 
     var filename;
 
-    if (tempStorageUrl && url.indexOf(tempStorageUrl) == 0) {
+    if (tempStorageUrl && url.indexOf(tempStorageUrl) == 0) {  /** if the temporary storage url exists and the link begins with it */
         var params = getUrlParams(url);
-        filename = params == null ? null : params["filename"];
+        filename = params == null ? null : params["filename"];  /** if the url parameters exist, we get file name from this parameters */
     } else {
         var parts = url.toLowerCase().split("/");
-        fileName = parts.pop();
+        fileName = parts.pop();  /** otherwise, get the file name from the last part of the url */
     }
 
+    /** get file name without extension */
     if (withoutExtension) {
         var ext = fileUtility.getFileExtension(fileName);
         return fileName.replace(ext, "");
@@ -43,24 +45,26 @@ fileUtility.getFileName = function (url, withoutExtension) {
     return fileName;
 };
 
+/** get file extension from the given url */
 fileUtility.getFileExtension = function (url, withoutDot) {
     if (!url) return null;
 
-    var fileName = fileUtility.getFileName(url);
+    var fileName = fileUtility.getFileName(url);  /** get file name from the given url */
 
     var parts = fileName.toLowerCase().split(".");
 
-    return withoutDot ? parts.pop() : "." + parts.pop();
+    return withoutDot ? parts.pop() : "." + parts.pop();  /** get the extension from the file name with or without dot */
 };
 
+/** get file type from the given url */
 fileUtility.getFileType = function (url) {
-    var ext = fileUtility.getFileExtension(url);
+    var ext = fileUtility.getFileExtension(url);  /** get the file extension from the given url */
 
-    if (fileUtility.documentExts.indexOf(ext) != -1) return fileUtility.fileType.text;
-    if (fileUtility.spreadsheetExts.indexOf(ext) != -1) return fileUtility.fileType.spreadsheet;
-    if (fileUtility.presentationExts.indexOf(ext) != -1) return fileUtility.fileType.presentation;
+    if (fileUtility.documentExts.indexOf(ext) != -1) return fileUtility.fileType.text;  /** text type for document extensions */
+    if (fileUtility.spreadsheetExts.indexOf(ext) != -1) return fileUtility.fileType.spreadsheet; /** spreadsheet type for spreadsheet extensions */
+    if (fileUtility.presentationExts.indexOf(ext) != -1) return fileUtility.fileType.presentation;  /** presentation type for presentation extensions */
 
-    return fileUtility.fileType.text;
+    return fileUtility.fileType.text;  /** the default file type is text */
 }
 
 fileUtility.fileType = {
@@ -69,17 +73,21 @@ fileUtility.fileType = {
     presentation: "presentation"
 }
 
+/** the document extension list */
 fileUtility.documentExts = [".doc", ".docx", ".docm", ".dot", ".dotx", ".dotm", ".odt", ".fodt", ".ott", ".rtf", ".txt", ".html", ".htm", ".mht", ".pdf", ".djvu", ".fb2", ".epub", ".xps"];
 
+/** the spreadsheet extension list */
 fileUtility.spreadsheetExts = [".xls", ".xlsx", ".xlsm", ".xlt", ".xltx", ".xltm", ".ods", ".fods", ".ots", ".csv"];
 
+/** the presentation extension list */
 fileUtility.presentationExts = [".pps", ".ppsx", ".ppsm", ".ppt", ".pptx", ".pptm", ".pot", ".potx", ".potm", ".odp", ".fodp", ".otp"];
 
+/** get url parameters */
 function getUrlParams(url) {
     try {
-        var query = url.split("?").pop();
-        var params = query.split("&");
-        var map = {};
+        var query = url.split("?").pop();  /** take all the parameters which are placed after ? sign in the file url */
+        var params = query.split("&");  /** parameters are separated by & sign */
+        var map = {};  /** write parameters and their values to the map dictionary */
         for (var i = 0; i < params.length; i++) {
             var parts = param.split("=");
             map[parts[0]] = parts[1];
@@ -91,4 +99,5 @@ function getUrlParams(url) {
     }
 }
 
+/** save all the functions to the fileUtility module to export it later in other files */
 module.exports = fileUtility;

@@ -44,49 +44,50 @@
                 console.log(message);
         };
 
-        var onAppReady = function () {
+        var onAppReady = function () {  /** the application is loaded into the browser */
             innerAlert("Document editor ready");
         };
 
-        var onDocumentStateChange = function (event) {
+        var onDocumentStateChange = function (event) {  /** the document is modified */
             var title = document.title.replace(/\*$/g, "");
             document.title = title + (event.data ? "*" : "");
         };
 
-        var onRequestEditRights = function () {
+        var onRequestEditRights = function () {  /** the user is trying to switch the document from the viewing into the editing mode */
             location.href = location.href.replace(RegExp("mode=view\&?", "i"), "");
         };
 
-        var onRequestHistory = function (event) {
+        var onRequestHistory = function (event) {  /** the user is trying to show the document version history */
             var historyObj = <%- JSON.stringify(history) %> || null;
 
-            docEditor.refreshHistory(
+            docEditor.refreshHistory(  /** show the document version history */
                 {
                     currentVersion: "<%- file.version %>",
                     history: historyObj
                 });
         };
 
-        var onRequestHistoryData = function (data) {
+        var onRequestHistoryData = function (data) {  /** the user is trying to click the specific document version in the document version history */
             var version = data.data;
             var historyData = <%- JSON.stringify(historyData) %> || null;
 
-            docEditor.setHistoryData(historyData[version-1]);
+            docEditor.setHistoryData(historyData[version-1]);  /** send the link to the document for viewing the version history */
         };
 
-        var onRequestHistoryClose = function (event){
+        var onRequestHistoryClose = function (event){  /**  the user is trying to go back to the document from viewing the document version history */
             document.location.reload();
         };
 
-        var onError = function (event) {
+        var onError = function (event) {  /** an error or some other specific event occurs */
             if (event)
                 innerAlert(event.data);
         };
 
-        var onOutdatedVersion = function (event) {
+        var onOutdatedVersion = function (event) {  /** the document is opened for editing with the old document.key value */
             location.reload(true);
         };
 
+        /** replace the link to the document which contains a bookmark */
         var replaceActionLink = function(href, linkParam) {
             var link;
             var actionIndex = href.indexOf("&action=");
@@ -103,10 +104,10 @@
             return link;
         }
 
-        var onMakeActionLink = function (event) {
+        var onMakeActionLink = function (event) {  /**  the user is trying to get link for opening the document which contains a bookmark, scrolling to the bookmark position */
             var actionData = event.data;
             var linkParam = JSON.stringify(actionData);
-            docEditor.setActionLink(replaceActionLink(location.href, linkParam));
+            docEditor.setActionLink(replaceActionLink(location.href, linkParam));  /** set the link to the document which contains a bookmark */
         };
 
         var connectEditor = function () {
@@ -128,6 +129,7 @@
             fixSize();
         };
 
+        /** get the editor sizes */
         var fixSize = function () {
             var wrapEl = document.getElementsByClassName("form");
             if (wrapEl.length) {
