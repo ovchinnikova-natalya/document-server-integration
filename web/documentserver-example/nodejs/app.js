@@ -158,7 +158,7 @@ app.post("/upload", function (req, res) {  /** define a handler for uploading fi
         const file = files.uploadedFile;
 
         if (file == undefined) {  /** if file parameter is undefined */
-            res.writeHead(200, { "Content-Type": "text/plain" });  /** then write the error status and message to the response */
+            res.writeHead(200, { "Content-Type": "text/plain" });  /** write the error status and message to the response */
             res.write("{ \"error\": \"Uploaded file not found\"}");
             res.end();
             return;
@@ -167,7 +167,7 @@ app.post("/upload", function (req, res) {  /** define a handler for uploading fi
         file.name = docManager.getCorrectName(file.name);
 
         if (configServer.get('maxFileSize') < file.size || file.size <= 0) {  /** check if the file size exceeds the maximum file size */
-			docManager.cleanFolderRecursive(uploadDirTmp, true);  /** if so, clean the folder with temporary files */
+			docManager.cleanFolderRecursive(uploadDirTmp, true);  /** clean the folder with temporary files */
             res.writeHead(200, { "Content-Type": "text/plain" });  /** and write the error status and message to the response */
             res.write("{ \"error\": \"File size is incorrect\"}");
             res.end();
@@ -246,7 +246,7 @@ var fileName = fileUtility.getFileName(req.query.filename);
             var newFileUri = responseUri.value;  /** get the callback url */
 
             if (result != 100) {  /** if the status isn't 100 */
-                writeResult(fileName, result, null);   /** then write the origin file to the result object */
+                writeResult(fileName, result, null);   /** write the origin file to the result object */
                 return;
             }
 
@@ -281,7 +281,7 @@ var fileName = fileUtility.getFileName(req.query.filename);
             key = documentService.generateRevisionId(key);  /** get document key */
             documentService.getConvertedUri(fileUri, fileExt, internalFileExt, key, true, callback);  /** get the url to the converted file */
         } else {
-            writeResult(fileName, null, null);  /** if the file with sucn an extension can't be converted, then write the origin file to the result object */
+            writeResult(fileName, null, null);  /** if the file with sucn an extension can't be converted, write the origin file to the result object */
         }
     } catch (ex) {
         console.log(ex);  
@@ -328,7 +328,7 @@ app.delete("/file", function (req, res) {  /** define a handler for removing fil
 			const historyPath = docManager.historyPath(fileName, userAddress, true);
 			docManager.cleanFolderRecursive(historyPath, true);  /** clean all the files from the history folder */
 		} else {
-			docManager.cleanFolderRecursive(docManager.storagePath(''), false);  /** if the file name is undefined, then clean the storage folder */
+			docManager.cleanFolderRecursive(docManager.storagePath(''), false);  /** if the file name is undefined, clean the storage folder */
 		}
 
         res.write("{\"success\":true}");
@@ -410,7 +410,7 @@ app.post("/track", function (req, res) {  /** define a handler for tracking file
 
                     var forcesavePath = docManager.forcesavePath(fileName, userAddress, false);  /** get the path to the forcesaved file */
                     if (forcesavePath != "") {  /** if this path is empty */
-                        fileSystem.unlinkSync(forcesavePath);  /** then remove it */
+                        fileSystem.unlinkSync(forcesavePath);  /** remove it */
                     }
                 }
             } catch (ex) {

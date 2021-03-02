@@ -98,7 +98,7 @@ docManager.getCorrectName = function (fileName, userAddress) {
     let index = 1;
 
     while (this.existsSync(docManager.storagePath(name, userAddress))) {  /** if a file with such a name already exists in this directory */
-        name = baseName + " (" + index + ")" + ext;  /** then add an index after its base name */
+        name = baseName + " (" + index + ")" + ext;  /** add an index after its base name */
         index++;
     }
 
@@ -136,7 +136,7 @@ docManager.saveFileData = function (fileName, userid, username) {
 docManager.getFileData = function (fileName, userAddress) {
     const history = path.join(docManager.historyPath(fileName, userAddress, true), fileName + ".txt");  /** get path to the file with a given file information */
     if (!this.existsSync(history)) {  /** if such a file doesn't exist */
-        return ["2017-01-01", "uid-1", "John Smith"];  /** then return default information */
+        return ["2017-01-01", "uid-1", "John Smith"];  /** return default information */
     }
 
     return ((fileSystem.readFileSync(history)).toString()).split(",");  /** otherwise, return file data in the string format */
@@ -256,7 +256,7 @@ docManager.getStoredFiles = function () {
             let historyPath = docManager.historyPath(storedFiles[i], userAddress);  /** get the path to the file history */
             let version = 1;
             if (historyPath != "") {  /** if the history path exists */
-                version = docManager.countVersion(historyPath);  /** then get a file version */
+                version = docManager.countVersion(historyPath);  /** get a file version */
             }
 
             const time = stats.mtime.getTime();  /** get the time of element modification */
@@ -292,7 +292,7 @@ docManager.getProtocol = function () {
 /** get current user host address */
 docManager.curUserHostAddress = function (userAddress) {
     if (!userAddress)  /** if user address isn't passed to the function */
-        userAddress = docManager.req.headers["x-forwarded-for"] || docManager.req.connection.remoteAddress;  /** then take it from the header or use the remote address */
+        userAddress = docManager.req.headers["x-forwarded-for"] || docManager.req.connection.remoteAddress;  /** take it from the header or use the remote address */
 
     return userAddress.replace(new RegExp("[^0-9a-zA-Z.=]", "g"), "_");
 };
@@ -351,7 +351,7 @@ docManager.getChanges = function (fileName) {
 docManager.countVersion = function(directory) {
     let i = 0;
     while (this.existsSync(path.join(directory, '' + (i + 1)))) {  /** check if the file with such a version number exists */
-        i++;  /** if so, increase a version value by 1 */
+        i++;  /** increase a version value by 1 */
     }
     return i;
 };
